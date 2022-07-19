@@ -15,11 +15,6 @@ public class ListUsersTests {
 
     @BeforeClass
     public static void precondition() throws IOException {
-        Request reqWithoutFilters = new Request()
-                .given(PropertyLoader.getProperty("baseUrl").concat("users"))
-                .get()
-//                .extractBody().as(usersListWithFilter)
-                ;
     }
 
 //    @Test(description = "При запросе users без фильтрации параметр page равен 1")

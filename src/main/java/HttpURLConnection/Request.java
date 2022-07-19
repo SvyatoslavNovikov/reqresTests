@@ -1,79 +1,70 @@
 package HttpURLConnection;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Request {
 
-    private URL url;
-    private HttpURLConnection connection;
-    private int statusCode;
-    private String body;
-    private Class cls;
+    final URL url;
+    private Integer connectionTimeout;
+    private Integer readTimeout;
+    private List<Property> properties;
 
-    /**
-     * Первый метод при отправке запроса, сохраняется параметр url
-     * @param url
-     * @return
-     * @throws IOException
-     */
-    public Request given(String url) throws IOException {
+    public Request(String url) throws MalformedURLException {
         this.url = new URL(url);
-        connection = (HttpURLConnection) this.url.openConnection();
+        this.properties = new ArrayList<>();
+    }
 
+    /**
+     * Сохраняем параметры
+     */
+    public Request setProperties(String key, String value) {
+        properties.add(new Property(key, value));
         return this;
     }
 
     /**
-     * Запрос типа GET
-     * @return
-     * @throws IOException
+     * Для отправки запроса, что GET, что POST, необходимо создать объект URL и открыть на его основе соединение
      */
-    public Request get() throws IOException {
-        connection.setRequestMethod("GET");
-        this.statusCode = connection.getResponseCode();
-        return this;
+    private HttpURLConnection getConnection() throws IOException {
+        return (HttpURLConnection) url.openConnection();
     }
 
     /**
-     * сохраняем значение в параметр body
-     * @return
+     * Все сохраненные параметры добавляются в запрос
      */
-    public Request extractBody() {
-        try (final BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-            String inputLine;
-            final StringBuilder content = new StringBuilder();
-            while ((inputLine = in.readLine()) != null) {
-                content.append(inputLine);
-            }
-            body = content.toString();
-        } catch (final Exception ex) {
-            ex.printStackTrace();
-            body = "";
+    private HttpURLConnection addParams(HttpURLConnection conn, String method) throws ProtocolException {
+        conn.setRequestMethod(method);
+
+        // Добавляем таймауты если они есть
+        if (connectionTimeout != null) {
+            conn.setConnectTimeout(connectionTimeout);
         }
-        return this;
+
+        if (readTimeout != null) {
+            conn.setReadTimeout(readTimeout);
+        }
+
+        // Добавлям все параметры из массива
+        for(Property prop: properties) {conn.setRequestProperty(prop.key, prop.value);
+        }
+
+        return conn;
     }
 
-    /**
-     * Дессериализация body с помощью библиотеки gson
-     * @param cls
-     * @return
-     */
-    public Request as(Class cls) {
-        this.cls = (Class) new Gson().fromJson(body, cls);
-        return this;
-    }
+    class Property {
+        String key;
+        String value;
 
-    public void method() {
-//        con.setRequestProperty("Content-Type", "application/json");
-//        con.setConnectTimeout(CONNECTION_TIMEOUT);
-//        con.setReadTimeout(CONNECTION_TIMEOUT);
+        public Property (String key, String value) {
+            this.key = key;
+            this.value = value;
+        }
     }
 
 }
