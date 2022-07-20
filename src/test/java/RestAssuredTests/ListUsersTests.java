@@ -1,6 +1,6 @@
 package RestAssuredTests;
 
-import RestAssured.entities.Users;
+import reqresClasses.Users;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;

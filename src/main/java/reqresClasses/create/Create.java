@@ -1,4 +1,4 @@
-package RestAssured.entities.create;
+package reqresClasses.create;
 
 import java.util.Date;
 

@@ -1,4 +1,4 @@
-package RestAssured.entities;
+package reqresClasses;
 
 public class UserData {
 

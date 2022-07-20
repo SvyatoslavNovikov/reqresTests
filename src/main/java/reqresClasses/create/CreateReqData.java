@@ -1,4 +1,4 @@
-package RestAssured.entities.create;
+package reqresClasses.create;
 
 public class CreateReqData {
 

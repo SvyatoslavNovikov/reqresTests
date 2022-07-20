@@ -1,4 +1,4 @@
-package RestAssured.entities;
+package reqresClasses;
 
 import java.util.List;
 

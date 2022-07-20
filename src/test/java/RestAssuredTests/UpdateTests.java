@@ -1,7 +1,7 @@
 package RestAssuredTests;
 
-import RestAssured.entities.create.Create;
-import RestAssured.entities.create.CreateReqData;
+import reqresClasses.create.Create;
+import reqresClasses.create.CreateReqData;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
