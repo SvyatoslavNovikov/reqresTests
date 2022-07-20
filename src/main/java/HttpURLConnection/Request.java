@@ -1,70 +1,112 @@
 package HttpURLConnection;
 
+import com.google.gson.Gson;
+import com.google.gson.internal.Primitives;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Request {
 
-    final URL url;
-    private Integer connectionTimeout;
-    private Integer readTimeout;
-    private List<Property> properties;
+    private RequestSpec spec;
+    private int responseCode;
+    private String responseContent;
 
-    public Request(String url) throws MalformedURLException {
-        this.url = new URL(url);
-        this.properties = new ArrayList<>();
-    }
-
-    /**
-     * Сохраняем параметры
-     */
-    public Request setProperties(String key, String value) {
-        properties.add(new Property(key, value));
+    public Request spec(RequestSpec spec) {
+        this.spec = spec;
         return this;
     }
 
-    /**
-     * Для отправки запроса, что GET, что POST, необходимо создать объект URL и открыть на его основе соединение
-     */
-    private HttpURLConnection getConnection() throws IOException {
-        return (HttpURLConnection) url.openConnection();
+    public Request get(String path) throws IOException {
+        final HttpURLConnection connection = (HttpURLConnection) makeUrl(path).openConnection();
+        connection.setRequestMethod("GET");
+
+        setProperties(connection);
+        responseCode = connection.getResponseCode();
+        saveResponseContent(connection);
+
+        return this;
+    }
+
+    public Request get() throws IOException {
+        final HttpURLConnection connection = (HttpURLConnection) makeUrl().openConnection();
+        connection.setRequestMethod("GET");
+
+        setProperties(connection);
+        responseCode = connection.getResponseCode();
+        saveResponseContent(connection);
+
+        return this;
+    }
+
+    public <T> T extractBodyAs(Class<T> classOfT) {
+        Gson gson = new Gson();
+        Object object = gson.fromJson(responseContent, classOfT);
+        return Primitives.wrap(classOfT).cast(object);
     }
 
     /**
-     * Все сохраненные параметры добавляются в запрос
+     * Два приватных метода, каждый формирует URL
+     * @param path
+     * @return
+     * @throws MalformedURLException
      */
-    private HttpURLConnection addParams(HttpURLConnection conn, String method) throws ProtocolException {
-        conn.setRequestMethod(method);
 
-        // Добавляем таймауты если они есть
-        if (connectionTimeout != null) {
-            conn.setConnectTimeout(connectionTimeout);
-        }
+    private URL makeUrl(String path) throws MalformedURLException {
+        String url = null;
 
-        if (readTimeout != null) {
-            conn.setReadTimeout(readTimeout);
-        }
+        if (spec.url != null) { url = spec.url.concat(path);}
+        if (url == null) { url = path; }
 
-        // Добавлям все параметры из массива
-        for(Property prop: properties) {conn.setRequestProperty(prop.key, prop.value);
-        }
-
-        return conn;
+        return new URL(url);
     }
 
-    class Property {
-        String key;
-        String value;
+    private URL makeUrl() throws MalformedURLException {
+        String url = null;
 
-        public Property (String key, String value) {
-            this.key = key;
-            this.value = value;
+        if (spec.url != null) { url = spec.url; }
+        if (spec.path != null) { url = url.concat(spec.path); }
+
+        return new URL(url);
+    }
+
+    /**
+     * Приватный метод, добавляет в соединение настройки из спецификации
+     * @param connection
+     */
+    private void setProperties(HttpURLConnection connection) {
+        for (RequestSpec.Property prop: spec.properties) {
+            connection.setRequestProperty(prop.key, prop.value);
+        }
+
+        if (spec.connectionTimeout != null) {
+            connection.setConnectTimeout(spec.connectionTimeout);
+        }
+
+        if (spec.readTimeout != null) {
+            connection.setReadTimeout(spec.readTimeout);
         }
     }
 
+    /**
+     * Приватный метод, сохраняет ответ респонса в строку.
+     * @param connection
+     */
+    private void saveResponseContent(HttpURLConnection connection) {
+        try (final BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            String inputLine;
+            final StringBuilder content = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                content.append(inputLine);
+            }
+            this.responseContent = content.toString();
+        } catch (final Exception ex) {
+            ex.printStackTrace();
+            this.responseContent = "";
+        }
+    }
 }
